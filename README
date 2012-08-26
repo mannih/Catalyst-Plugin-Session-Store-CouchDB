@@ -1,0 +1,5 @@
+Catalyst::Plugin::Session::Store::CouchDB
+
+Use Apache CouchDB as a backend to store your sessions in.
+
+
