@@ -6,21 +6,28 @@ BEGIN { extends 'Catalyst::Controller' }
 
 __PACKAGE__->config(namespace => '');
 
-sub step_one : Local :Args(1) {
+
+sub set_value : Local Args( 1 ) {
     my ( $self, $c, $arg ) = @_;
     
     $c->session->{ first_value } = $arg;
-    $c->response->redirect( '/step_two' );
-    $c->detach;
+    $c->response->body( $arg );
 }
 
-sub step_two : Local Args(0) {
+
+sub get_value : Local Args( 0 ) {
     my ( $self, $c ) = @_;
 
     $c->response->body( $c->session->{ first_value } );
-    $c->session->{ second_value } = reverse $c->session->{ first_value };
 }
 
+
+sub delete_session : Local Args( 0 ) {
+    my ( $self, $c ) = @_;
+
+    $c->delete_session( 'reason' );
+    $c->response->body( '' );
+}
 
 __PACKAGE__->meta->make_immutable;
 
