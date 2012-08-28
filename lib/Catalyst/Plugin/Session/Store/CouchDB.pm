@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Catalyst::Plugin::Session::Store::CouchDB::Client;
 use Catalyst::Exception;
 use Data::Dumper;
-use Log::Any qw/ $log /;
+use Log::Any::Adapter;
 
 extends 'Catalyst::Plugin::Session::Store';
 
@@ -38,16 +38,16 @@ has debug_flag => (
     builder => '_build_debug',
 );
 
-has logger => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_set_logger',
-);
+#sub logger {
+#    return $log;
+#}
 
-sub _set_logger {
+
+sub log {
     my $self = shift;
+    my $sthg = shift;
 
-    return $log;
+    Log::Any::Adapter->set( 'Catalyst', logger => $sthg );
 }
 
 sub _build_dbconnection {
@@ -99,6 +99,8 @@ sub _build_dbname {
 
 sub _build_debug {
     my $self = shift;
+
+    return 1;
 
     my $cfg = $self->_session_plugin_config;
     if ( exists $cfg->{ debug } ) {

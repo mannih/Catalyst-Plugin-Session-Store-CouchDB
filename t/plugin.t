@@ -5,6 +5,11 @@ use Data::Dumper;
 use Test::More;
 use Test::Exception;
 
+use Log::Any::Adapter;
+Log::Any::Adapter->set('Log4perl');
+use Log::Log4perl;
+Log::Log4perl::init_once( '/home/manni/src/StratoPro/logging.conf' );
+
 BEGIN { use_ok 'Catalyst::Plugin::Session::Store::CouchDB' }
 
 my $default_couchdb_uri = 'http://localhost:5984/';
