@@ -38,7 +38,7 @@ has debug_flag => (
     builder => '_build_debug',
 );
 
-has log => (
+has logger => (
     is      => 'ro',
     lazy    => 1,
     builder => '_set_logger',
@@ -55,7 +55,7 @@ sub _build_dbconnection {
     my $uri  = $self->uri;
     my $name = $self->dbname;
     
-    $self->log->debug( "Trying to connect to db '$name' at '$uri'." )
+    $self->logger->debug( "Trying to connect to db '$name' at '$uri'." )
         if $self->debug_flag;
 
     my $db = eval {
@@ -63,7 +63,7 @@ sub _build_dbconnection {
             uri   => $uri, 
             db    => $name,
             debug => $self->debug_flag,
-            log   => $self->log,
+            log   => $self->logger,
         );
 	};
     if ( $@ ) {
@@ -113,7 +113,7 @@ sub get_session_data {
     my ( $self, $key ) = @_;
     my $thawed_session;
 
-    $self->log->debug( "Trying to retrieve session '$key'" )
+    $self->logger->debug( "Trying to retrieve session '$key'" )
         if $self->debug_flag;
 
     if ( my $session = $self->dbconnection->retrieve( $key ) ) {
@@ -128,7 +128,7 @@ sub store_session_data {
     my ( $self, $key, $data ) = @_;
     my $doc;
      
-    $self->log->debug( "Trying to store session '$key'" )
+    $self->logger->debug( "Trying to store session '$key'" )
         if $self->debug_flag;
 
     $doc = $self->freeze_data( $data );
@@ -139,7 +139,7 @@ sub store_session_data {
 sub delete_session_data {
     my ( $self, $key ) = @_;
 
-    $self->log->debug( "Trying to delete session '$key'" )
+    $self->logger->debug( "Trying to delete session '$key'" )
         if $self->debug_flag;
 
     $self->dbconnection->delete( $key );
