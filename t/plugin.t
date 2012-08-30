@@ -17,9 +17,34 @@ my $default_couchdb_uri = 'http://localhost:5984/';
 test_new();
 test_store_session_data();
 test_delete_expired_sessions();
+test_freeze_thaw();
 
 done_testing();
 
+
+sub test_freeze_thaw {
+    my $cdb = get_new_db_instance( { uri => $default_couchdb_uri } );
+    
+    my $object1 = SessionTestApp::Logger->new(
+        debug => 'some debug value',
+        error => 'some error value',
+    );
+    my $frozen = $cdb->freeze_data( $object1 );
+    ok( $frozen, 'freeze_data froze something' );
+    my $thawed = $cdb->thaw_data( $frozen );
+    ok( $thawed, 'thaw_data thawed something' );
+    isa_ok( $thawed, 'SessionTestApp::Logger' );
+    is( $thawed->debug, 'some debug value', 'debug returns correct value' );
+    is( $thawed->error, 'some error value', 'error returns correct value' );
+    is( ref $frozen, ref {}, 'Freezing a Storage consuming class yields a hash-ref' );
+    ok( exists $frozen->{ __CLASS__ }, 'We have the needed __CLASS__ key' );
+
+    my $struct = [ 1, 2, { foo => 'bar' }, [ [ 3, 4 ], [ 5, 6 ], { baz => 'zab' } ] ];
+    $thawed = $cdb->thaw_data( $cdb->freeze_data( $struct ) );
+    is_deeply( $thawed, $struct, 'freeze and thaw return original structure' );
+
+    dies_ok { $cdb->freeze_data( Catalyst::Plugin::Session::Store::CouchDB->new ) } 'freeze_data dies when it cannot freeze an object';
+}
 
 sub test_store_session_data {
     my $couchdb_conn = get_new_db_instance( { uri => $default_couchdb_uri } );
