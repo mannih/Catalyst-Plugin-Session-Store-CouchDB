@@ -6,7 +6,6 @@ use Catalyst::Runtime 5.80;
 
 use Catalyst qw/
     -Debug
-    StackTrace
     ConfigLoader
     Static::Simple
     Session
@@ -26,7 +25,7 @@ __PACKAGE__->config(
 );
 
 
-__PACKAGE__->setup();
+__PACKAGE__->setup;
 
 
 

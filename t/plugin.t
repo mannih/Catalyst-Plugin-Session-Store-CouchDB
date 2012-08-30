@@ -5,10 +5,8 @@ use Data::Dumper;
 use Test::More;
 use Test::Exception;
 
-use Log::Any::Adapter;
-Log::Any::Adapter->set('Log4perl');
-use Log::Log4perl;
-Log::Log4perl::init_once( '/home/manni/src/StratoPro/logging.conf' );
+use lib 't/lib';
+use SessionTestApp::Logger;
 
 BEGIN { use_ok 'Catalyst::Plugin::Session::Store::CouchDB' }
 
@@ -35,8 +33,8 @@ sub test_store_session_data {
     };
 
     my $new_expires = $time + 1000;
-    ok( $couchdb_conn->store_session_data( "expires:test_session_id", $new_expires ) );
-    ok( $couchdb_conn->store_session_data( "session:test_session_id", $to_be_put_into_db ) );
+    ok( $couchdb_conn->store_session_data( "expires:test_session_id", $new_expires ), 'store returns true' );
+    ok( $couchdb_conn->store_session_data( "session:test_session_id", $to_be_put_into_db ), 'store returns true' );
 
     my $result = $couchdb_conn->get_session_data( "session:test_session_id" );
     is_deeply( $result, $to_be_put_into_db, "session-content should equal the data we put in" );
@@ -110,6 +108,9 @@ sub get_new_db_instance {
             Catalyst::Plugin::Session::Store::CouchDB
             Moose::Object
         / ] );
+
+    my $logger = SessionTestApp::Logger->new;
+    $c_meta->add_method( log                    => sub { $logger } );
     $c_meta->add_method( _session_plugin_config => sub { {} } );
 
     return $c_meta->name->new( $args );

@@ -4,8 +4,6 @@ use Moose;
 use namespace::autoclean;
 use Catalyst::Plugin::Session::Store::CouchDB::Client;
 use Catalyst::Exception;
-use Data::Dumper;
-use Log::Any::Adapter;
 
 extends 'Catalyst::Plugin::Session::Store';
 
@@ -35,27 +33,15 @@ has dbconnection => (
 has debug_flag => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build_debug',
+    builder => '_build_debug_flag',
 );
-
-#sub logger {
-#    return $log;
-#}
-
-
-sub log {
-    my $self = shift;
-    my $sthg = shift;
-
-    Log::Any::Adapter->set( 'Catalyst', logger => $sthg );
-}
 
 sub _build_dbconnection {
     my $self = shift;
     my $uri  = $self->uri;
     my $name = $self->dbname;
     
-    $self->logger->debug( "Trying to connect to db '$name' at '$uri'." )
+    $self->log->debug( "Trying to connect to db '$name' at '$uri'." )
         if $self->debug_flag;
 
     my $db = eval {
@@ -63,7 +49,7 @@ sub _build_dbconnection {
             uri   => $uri, 
             db    => $name,
             debug => $self->debug_flag,
-            log   => $self->logger,
+            log   => $self->log,
         );
 	};
     if ( $@ ) {
@@ -97,10 +83,8 @@ sub _build_dbname {
     }
 }
 
-sub _build_debug {
+sub _build_debug_flag {
     my $self = shift;
-
-    return 1;
 
     my $cfg = $self->_session_plugin_config;
     if ( exists $cfg->{ debug } ) {
@@ -115,7 +99,7 @@ sub get_session_data {
     my ( $self, $key ) = @_;
     my $thawed_session;
 
-    $self->logger->debug( "Trying to retrieve session '$key'" )
+    $self->log->debug( "Trying to retrieve session '$key'" )
         if $self->debug_flag;
 
     if ( my $session = $self->dbconnection->retrieve( $key ) ) {
@@ -130,7 +114,7 @@ sub store_session_data {
     my ( $self, $key, $data ) = @_;
     my $doc;
      
-    $self->logger->debug( "Trying to store session '$key'" )
+    $self->log->debug( "Trying to store session '$key'" )
         if $self->debug_flag;
 
     $doc = $self->freeze_data( $data );
@@ -141,7 +125,7 @@ sub store_session_data {
 sub delete_session_data {
     my ( $self, $key ) = @_;
 
-    $self->logger->debug( "Trying to delete session '$key'" )
+    $self->log->debug( "Trying to delete session '$key'" )
         if $self->debug_flag;
 
     $self->dbconnection->delete( $key );
