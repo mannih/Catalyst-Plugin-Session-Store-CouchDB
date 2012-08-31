@@ -1,0 +1,23 @@
+inc/Module/AutoInstall.pm
+inc/Module/Install.pm
+inc/Module/Install/AutoInstall.pm
+inc/Module/Install/Base.pm
+inc/Module/Install/Can.pm
+inc/Module/Install/Fetch.pm
+inc/Module/Install/Include.pm
+inc/Module/Install/Makefile.pm
+inc/Module/Install/Metadata.pm
+inc/Module/Install/Win32.pm
+inc/Module/Install/WriteAll.pm
+lib/Catalyst/Plugin/Session/Store/CouchDB.pm
+lib/Catalyst/Plugin/Session/Store/CouchDB/Client.pm
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+README
+t/lib/script/sessiontestapp_server.pl
+t/lib/SessionTestApp.pm
+t/lib/SessionTestApp/Controller/Root.pm
+t/lib/SessionTestApp/Logger.pm
+t/live-app.t
+t/plugin.t
