@@ -28,5 +28,15 @@ $ua->content_lacks( 'this_string_should_be_stored' );
 $ua->content_lacks( 'final_string_value' );
 $ua->content_lacks( 'another_string' );
 
+$ua->get_ok( 'http://localhost/store_storage_object', 'request to store_storage_object' );
+$ua->get_ok( 'http://localhost/retrieve_storage_object', 'request to retrieve_storage_object' );
+$ua->content_contains( 'debug:some weird debug value' );
+$ua->content_contains( 'error:some sort of error value' );
+
+$ua->get_ok( 'http://localhost/store_storable_object', 'request to store_storable_object' );
+$ua->get_ok( 'http://localhost/retrieve_storable_object', 'request to retrieve_storable_object' );
+$ua->content_contains( 'uri:this is not a URI' );
+$ua->content_contains( 'dbname:and this is not a dbname' );
+$ua->content_contains( 'debug_flag:4711' );
 
 done_testing;

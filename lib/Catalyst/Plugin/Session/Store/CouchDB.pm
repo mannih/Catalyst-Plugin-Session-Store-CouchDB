@@ -5,6 +5,7 @@ use namespace::autoclean;
 use Catalyst::Plugin::Session::Store::CouchDB::Client;
 use Catalyst::Exception;
 use Module::Runtime qw(use_module);
+use Storable qw/ freeze thaw /;
 
 extends 'Catalyst::Plugin::Session::Store';
 
@@ -157,7 +158,7 @@ sub freeze_data {
             $frozen = $data->pack;
         }
         else {
-            die "Don't know how to freeze object of type $data_ref.";
+            $frozen = { __STORABLE_FROZEN__ => freeze $data };
         }
     }
     else {
@@ -175,6 +176,9 @@ sub thaw_data {
     if ( ref $data eq 'HASH' ) {
         if ( $data->{ __CLASS__ } ) {
             $thawed = use_module( $data->{ __CLASS__ } )->unpack( $data );
+        }
+        elsif ( $data->{ __STORABLE_FROZEN__ } ) {
+            $thawed = thaw $data->{ __STORABLE_FROZEN__ };
         }
         else {
             foreach ( keys %$data ) {

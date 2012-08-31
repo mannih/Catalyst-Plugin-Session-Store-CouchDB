@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use Data::Dumper;
 
 use Test::More;
 use Test::Exception;
@@ -25,6 +24,7 @@ done_testing();
 sub test_freeze_thaw {
     my $cdb = get_new_db_instance( { uri => $default_couchdb_uri } );
     
+    # Freeze and thaw a Moose object consuming the Storage role
     my $object1 = SessionTestApp::Logger->new(
         debug => 'some debug value',
         error => 'some error value',
@@ -39,11 +39,23 @@ sub test_freeze_thaw {
     is( ref $frozen, ref {}, 'Freezing a Storage consuming class yields a hash-ref' );
     ok( exists $frozen->{ __CLASS__ }, 'We have the needed __CLASS__ key' );
 
+    # Freeze and thaw a Perl data structure
     my $struct = [ 1, 2, { foo => 'bar' }, [ [ 3, 4 ], [ 5, 6 ], { baz => 'zab' } ] ];
     $thawed = $cdb->thaw_data( $cdb->freeze_data( $struct ) );
     is_deeply( $thawed, $struct, 'freeze and thaw return original structure' );
 
-    dies_ok { $cdb->freeze_data( Catalyst::Plugin::Session::Store::CouchDB->new ) } 'freeze_data dies when it cannot freeze an object';
+    # Freeze a blessed object that doesn't have Storage
+    my $object2 = Catalyst::Plugin::Session::Store::CouchDB->new(
+                        uri        => 'not really a uri',
+                        dbname     => 'foobar',
+                        debug_flag => 123,
+    );
+    $frozen = $cdb->freeze_data( $object2 );
+    $thawed = $cdb->thaw_data( $frozen );
+    isa_ok( $thawed, 'Catalyst::Plugin::Session::Store::CouchDB' );
+    is( $thawed->uri, 'not really a uri', 'respawned object still knows its uri' );
+    is( $thawed->debug_flag, 123, 'respawned object still knows its debug_flag' );
+    is( $thawed->dbname, 'foobar', 'respawned object still knows its dbname' );
 }
 
 sub test_store_session_data {
@@ -75,7 +87,6 @@ sub test_store_session_data {
     $result = $couchdb_conn->get_session_data( 'expires:test_session_id' );
     is($result, undef, 'expires-session is gone after deletion.' );
 }
-
 
 sub test_new {
     my $couchdb_conn = get_new_db_instance( {
@@ -122,7 +133,6 @@ sub test_delete_expired_sessions {
     dies_ok { $couchdb_conn->delete_expired_sessions; } 'unimplemented method triggers exception';
 }
 
-
 sub get_new_db_instance {
     my $args = shift;
 
@@ -140,5 +150,3 @@ sub get_new_db_instance {
 
     return $c_meta->name->new( $args );
 }
-
-
