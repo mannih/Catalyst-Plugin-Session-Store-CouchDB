@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use IO::Socket::INET;
 
 use lib 't/lib';
 use SessionTestApp::Logger;
@@ -14,9 +15,13 @@ my $default_couchdb_uri = 'http://localhost:5984/';
 # TODO: check whether a db is available or even: mock the db 
 
 test_new();
-test_store_session_data();
 test_delete_expired_sessions();
 test_freeze_thaw();
+SKIP: {
+    skip 'No CouchDB instance found on localhost:5984.', 6 
+        unless IO::Socket::INET->new( '127.0.0.1:5984' );
+    test_store_session_data();
+}
 
 done_testing();
 
