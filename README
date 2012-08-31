@@ -2,4 +2,6 @@ Catalyst::Plugin::Session::Store::CouchDB
 
 Use Apache CouchDB as a backend to store your sessions in.
 
-
+The test suite of this module will try to connect to a CouchDB
+instance running on localhost:5984. Tests will be skipped if the
+instance cannot be found.
