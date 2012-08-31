@@ -22,6 +22,7 @@ test_requires 'Test::More' => '0.88';
 test_requires 'Test::WWW::Mechanize::Catalyst';
 test_requires 'Test::Exception';
 test_requires 'MooseX::Storage';
+test_requires 'IO::Socket::INET';
 
 resources(
     'license',    => 'http://dev.perl.org/licenses/',
