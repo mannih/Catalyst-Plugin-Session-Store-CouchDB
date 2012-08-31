@@ -110,21 +110,21 @@ sub test_new {
     isa_ok( $couchdb_conn, "Catalyst::Plugin::Session::Store" );
 
     is( $couchdb_conn->uri, $default_couchdb_uri, 'uri is correct' );
-    is( $couchdb_conn->dbname, 'catalyst', 'dbname is correct' );
+    is( $couchdb_conn->dbname, 'catalyst-session-store', 'dbname is correct' );
 
     $couchdb_conn = get_new_db_instance( { uri => 'http://example.com:1234/foobar', } );
     isa_ok( $couchdb_conn, "Catalyst::Plugin::Session::Store::CouchDB" );
     isa_ok( $couchdb_conn, "Catalyst::Plugin::Session::Store" );
 
     is( $couchdb_conn->uri, 'http://example.com:1234/foobar', 'uri is correct' );
-    is( $couchdb_conn->dbname, 'catalyst', 'dbname is correct' );
+    is( $couchdb_conn->dbname, 'catalyst-session-store', 'dbname is correct' );
 
     $couchdb_conn = get_new_db_instance( { uri => 'http://300.300.300.300:1234/foobar', } );
     isa_ok( $couchdb_conn, "Catalyst::Plugin::Session::Store::CouchDB" );
     isa_ok( $couchdb_conn, "Catalyst::Plugin::Session::Store" );
 
     is( $couchdb_conn->uri, 'http://300.300.300.300:1234/foobar', 'uri is correct' );
-    is( $couchdb_conn->dbname, 'catalyst', 'dbname is correct' );
+    is( $couchdb_conn->dbname, 'catalyst-session-store', 'dbname is correct' );
 
     dies_ok {
         $couchdb_conn->store_session_data( "session:test_session_id", { foo => 'bar' } );

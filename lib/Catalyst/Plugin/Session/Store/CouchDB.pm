@@ -48,15 +48,19 @@ sub _build_dbconnection {
 
     my $db = eval {
 		Catalyst::Plugin::Session::Store::CouchDB::Client->new( 
-            uri   => $uri, 
-            db    => $name,
-            debug => $self->debug_flag,
-            log   => $self->log,
+            uri    => $uri, 
+            dbname => $name,
+            debug  => $self->debug_flag,
+            log    => $self->log,
         );
 	};
+
     if ( $@ ) {
         Catalyst::Exception->throw( error => $@ );
     }
+
+    $db->create_database;
+
     return $db;
 }
 
@@ -80,7 +84,7 @@ sub _build_dbname {
         return $cfg->{ dbname };
     }
     else {
-        return 'catalyst';
+        return 'catalyst-session-store';
     }
 }
 
@@ -220,7 +224,7 @@ and in your MyApp.conf:
 
     <Plugin::Session>
         uri https://db.example.com:1234/  # defaults to 'http://localhost:5984/'
-        dbname test                       # defaults to 'catalyst'
+        dbname test                       # defaults to 'catalyst-session-store'
     </Plugin::Session>
 
 and, finally, in your controllers:
@@ -240,12 +244,14 @@ Three options can be set, but only the first two are really important.
 =head2 uri
 
 The URI to your CouchDB instance. This defaults to http://localhost:5984/ 
-Please note the trailing slash.
 
 =head2 dbname
 
-The name of the database in which your sessions should be stored. You will have
-to create the database yourself.
+The name of the database in which your sessions should be stored. If the database
+does not yet exist, it will be created when the first request is made. This
+also means that if you start your Catalyst application, store or retrieve a session
+and then delete the database, you app will die.
+The default for this option is 'catalyst-session-store'.
 
 =head2 debug_flag
 

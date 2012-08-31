@@ -9,6 +9,7 @@ use HTTP::Request;
 use JSON;
 use Encode qw( encode_utf8 );
 
+our $VERSION = '0.01';
 
 has user_agent => (
     isa     => 'LWP::UserAgent',
@@ -23,10 +24,10 @@ has uri => (
     default => 'http://localhost:5984',
 );
 
-has db => (
-    isa     => 'Str',
-    is      => 'rw',
-    default => 'read_write_test_range',
+has dbname => (
+    isa      => 'Str',
+    is       => 'rw',
+    required => 1,
 );
 
 has doc => (
@@ -71,6 +72,7 @@ sub _build_user_agent {
 
     my $ua = LWP::UserAgent->new;
     $ua->timeout( $self->timeout );
+    $ua->agent( 'Catalyst::Plugin::Session::Store::CouchDB::Client/' . $VERSION );
 
     return $ua;
 }
@@ -80,7 +82,7 @@ sub doc_exists {
     my $doc_id = shift;
 
     try {
-        my $doc = $self->_send_db_request( "GET", $doc_id )->content;
+        my $doc = $self->_send_db_request( 'GET', $doc_id )->content;
         $self->doc( from_json( $doc ) );
         $self->doc_id( $self->doc->{ _id } );
         $self->doc_rev( $self->doc->{ _rev } );
@@ -98,7 +100,7 @@ sub doc_exists {
     }
 }
 
-sub make_request {
+sub _make_request {
     my $self             = shift;
     my $method           = shift;
     my $request_data     = shift;
@@ -119,7 +121,13 @@ sub make_request {
     }
     my $h = HTTP::Headers->new( %headers );
 
-    my $uri = $self->uri . "/" . $self->db;
+    my $uri = $self->uri;
+    $uri =~ s#/$##;
+
+    if ( $self->dbname ) {
+        $uri .= '/' . $self->dbname;
+    }
+
     if ( defined $url_param_string ) {
         $uri .= '/' . $url_param_string;
     }
@@ -141,11 +149,12 @@ sub _send_db_request {
     my $url_param_string = shift;
     my $request_data     = shift;
 
-    my $response = $self->make_request( $method, $request_data, $url_param_string );
+    my $response = $self->_make_request( $method, $request_data, $url_param_string );
 
-    if ( $method eq "GET" ) {
+    if ( $method eq 'GET' ) {
         if ( $response->is_success ) {
-            die "no such doc" if $response =~ /not found/;
+            die 'no such doc' 
+                if $response =~ /not found/;
         }
     }
 
@@ -222,13 +231,41 @@ sub delete {
             $self->doc_id( '' );
         }
     }
-    elsif ( ref( $key ) eq 'ARRAY' ) {
+    elsif ( ref $key eq 'ARRAY' ) {
         foreach ( @$key ) {
             $self->delete( $_ );
         }
     }
 
     return;
+}
+
+sub list_databases {
+    my $self = shift;
+
+    my $dbname = $self->dbname;
+    $self->dbname( '' );
+
+    my $response = $self->_send_db_request( 'GET', '_all_dbs' );
+    my $dbs = from_json( $response->content );
+    $self->dbname( $dbname );
+
+    return $dbs;
+}
+
+sub create_database {
+    my $self = shift;
+
+    my $dbs    = $self->list_databases;
+    my $dbname = $self->dbname;
+    $self->dbname( '' );
+
+    unless ( grep { /^$dbname$/ } @$dbs ) {
+        $self->log->debug( "Database $dbname doesn't exist. Trying to create it now." );
+        $self->_send_db_request( 'PUT', "$dbname/" );
+    }
+
+    $self->dbname( $dbname );
 }
 
 
