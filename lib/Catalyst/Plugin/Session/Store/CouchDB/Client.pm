@@ -60,11 +60,17 @@ has log => (
     required => 1,
 );
 
+has timeout => (
+    is      => 'ro',
+    isa     => 'Int',
+    default => 5,
+);
+
 sub _build_user_agent {
     my $self = shift;
 
     my $ua = LWP::UserAgent->new;
-    $ua->timeout( 10 );
+    $ua->timeout( $self->timeout );
 
     return $ua;
 }
@@ -98,15 +104,13 @@ sub make_request {
     my $request_data     = shift;
     my $url_param_string = shift;
 
-    my %headers = (
-        Content_Type => 'application/json',
-    );
-
+    my %headers = ( Content_Type => 'application/json' );
     my $data;
+
     if ( defined $request_data ) {
         $headers{ Content_Length } = length $request_data;
         
-        if($self->encode){
+        if ( $self->encode ) {
             $data = encode_utf8( $request_data );
 	    }
 	    else{
@@ -160,9 +164,6 @@ sub _send_db_request {
     return $response;
 }
 
-#############################################################
-#### interface-methoden, an Storable::CouchDB angelehnt######
-#############################################################
 
 sub retrieve {
     my $self = shift;
@@ -171,7 +172,7 @@ sub retrieve {
 
     $self->doc_exists( $key );
 
-    if ( ref( $self->doc ) eq "HASH" ) {
+    if ( ref $self->doc eq 'HASH' ) {
         $result = $self->doc->{ data };
     }
     else {
@@ -186,7 +187,7 @@ sub store {
     my $couchdb_key = shift;
     my $data        = shift;
 
-    $self->log->debug( "storing session '$couchdb_key'. Our doc_id is '" . $self->doc_id . "'" )
+    $self->log->debug( "Storing session '$couchdb_key'. Our doc_id is '" . $self->doc_id . "'" )
         if $self->debug;
 
     my $param  = {
@@ -200,8 +201,7 @@ sub store {
         $self->doc_id( $couchdb_key );
     }
 
-    my $param_as_json = to_json($param);
-    my $response = $self->_send_db_request( 'PUT', $self->doc_id, $param_as_json);
+    my $response = $self->_send_db_request( 'PUT', $self->doc_id, to_json( $param ) );
 
     return $response->is_success;
 }
@@ -210,31 +210,56 @@ sub delete {
     my $self = shift;
     my $key  = shift;
 
-    unless ( ref( $key ) ) {
+    unless ( ref $key ) {
         unless ( $key eq $self->doc_id ) {
             $self->doc_exists( $key );
         }
         if ( $self->doc_id && $self->doc_rev ) {
-            $self->_send_db_request( "DELETE", $self->doc_id . "?rev=" . $self->doc_rev );
+            $self->_send_db_request( 'DELETE', $self->doc_id . '?rev=' . $self->doc_rev );
 
             $self->doc( {} );
             $self->doc_rev( '' );
             $self->doc_id( '' );
         }
     }
-    elsif ( ref( $key ) eq "ARRAY" ) {
+    elsif ( ref( $key ) eq 'ARRAY' ) {
         foreach ( @$key ) {
             $self->delete( $_ );
         }
     }
-    else {
-        ;
-    }
-    return undef;
+
+    return;
 }
 
-sub delete_expired_docs {
-    my $self = shift;
-}
 
 1;
+
+__END__
+
+=head1 NAME
+
+Catalyst::Plugin::Session::Store::CouchDB::Client - CouchDB Client library used by Catalyst::Plugin::Session::Store::CouchDB
+
+=head1 SYNOPSIS
+
+Please see the documentation for L<Catalyst::Plugin::Session::Store::CouchDB>
+
+=head1 DESCRIPTION
+
+Please see the documentation for L<Catalyst::Plugin::Session::Store::CouchDB>
+
+=head1 LICENSE
+
+This program is free software, you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Manni Heumann
+
+=head1 COPYRIGHT
+
+Copyright (c) 2012, Manni Heumann
+
+=cut
+

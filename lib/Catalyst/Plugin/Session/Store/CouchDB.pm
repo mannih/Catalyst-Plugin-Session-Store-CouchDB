@@ -135,8 +135,6 @@ sub delete_expired_sessions {
     
     Catalyst::Exception->
         throw( error => 'delete_expired_sessions is not yet implemented' );
-       
-    $self->dbconnection->delete_expired_docs();
 }
 
 sub freeze_data {
@@ -215,7 +213,7 @@ In your MyApp.pm:
     use Catalyst qw/
         Session
         Session::Store::CouchDB
-        Session::State::Cookie    # or similar
+        Session::State::Cookie
     /;
 
 and in your MyApp.conf:
@@ -227,12 +225,33 @@ and in your MyApp.conf:
 
 and, finally, in your controllers:
 
-    $c->session->{foo} = 'bar'; # will be saved
+    $c->session->{ foo } = 'bar'; # will be saved
 
 =head1 DESCRIPTION
 
 C<Catalyst::Plugin::Session::Store::CouchDB> is a session storage plugin using
-CouchDB (L<http://www.couchdb.org>) as it's backend.
+CouchDB (L<http://www.couchdb.org>) as its backend. It is using its own client
+library to talk to the CouchDB instance.
+
+=head1 CONFIGURATION
+
+Three options can be set, but only the first two are really important.
+
+=head2 uri
+
+The URI to your CouchDB instance. This defaults to http://localhost:5984/ 
+Please note the trailing slash.
+
+=head2 dbname
+
+The name of the database in which your sessions should be stored. You will have
+to create the database yourself.
+
+=head2 debug_flag
+
+Set this to a true value if you need extensive logging of what happens when
+this module stores or retrieves sessions. This should only be necessary when
+reporting bugs.
 
 =head1 LICENSE
 
@@ -241,9 +260,11 @@ under the same terms as Perl itself.
 
 =head1 AUTHOR
 
+Manni Heumann
 
 =head1 COPYRIGHT
 
+Copyright (c) 2012, Manni Heumann
 
 =cut
 
