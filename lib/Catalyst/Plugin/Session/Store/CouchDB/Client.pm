@@ -3,7 +3,6 @@ package Catalyst::Plugin::Session::Store::CouchDB::Client;
 use Moose;
 use namespace::autoclean;
 use TryCatch;
-use Data::Dumper;
 use LWP::UserAgent;
 use HTTP::Headers;
 use HTTP::Request;

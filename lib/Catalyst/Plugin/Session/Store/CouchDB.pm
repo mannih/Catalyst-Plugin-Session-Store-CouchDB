@@ -4,8 +4,8 @@ use Moose;
 use namespace::autoclean;
 use Catalyst::Plugin::Session::Store::CouchDB::Client;
 use Catalyst::Exception;
-use Data::Dumper;
-use Log::Any qw/ $log /;
+use Module::Runtime qw(use_module);
+use Storable qw/ freeze thaw /;
 
 extends 'Catalyst::Plugin::Session::Store';
 
@@ -35,20 +35,8 @@ has dbconnection => (
 has debug_flag => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build_debug',
+    builder => '_build_debug_flag',
 );
-
-has log => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_set_logger',
-);
-
-sub _set_logger {
-    my $self = shift;
-
-    return $log;
-}
 
 sub _build_dbconnection {
     my $self = shift;
@@ -71,7 +59,6 @@ sub _build_dbconnection {
     }
     return $db;
 }
-
 
 sub _build_uri {
     my $self = shift;
@@ -97,7 +84,7 @@ sub _build_dbname {
     }
 }
 
-sub _build_debug {
+sub _build_debug_flag {
     my $self = shift;
 
     my $cfg = $self->_session_plugin_config;
@@ -123,7 +110,6 @@ sub get_session_data {
     return $thawed_session;
 }
 
-
 sub store_session_data {
     my ( $self, $key, $data ) = @_;
     my $doc;
@@ -135,7 +121,6 @@ sub store_session_data {
     return $self->dbconnection->store( $key => $doc );
 }
 
-
 sub delete_session_data {
     my ( $self, $key ) = @_;
 
@@ -144,7 +129,6 @@ sub delete_session_data {
 
     $self->dbconnection->delete( $key );
 }
-
 
 sub delete_expired_sessions {
     my ( $self ) = @_;
@@ -155,30 +139,26 @@ sub delete_expired_sessions {
     $self->dbconnection->delete_expired_docs();
 }
 
-
 sub freeze_data {
     my ( $self, $data ) = @_;
     my $frozen;
 
     if ( my $data_ref = ref $data ) {
-        if ( $data_ref eq "HASH" ) {
+        if ( $data_ref eq 'HASH' ) {
             foreach my $k ( keys %$data ) {
                 $frozen->{ $k } = $self->freeze_data( $data->{ $k } );
             }
         }
-        elsif ( $data_ref eq "ARRAY" ) {
+        elsif ( $data_ref eq 'ARRAY' ) {
             foreach my $el ( @$data ) {
                 push @$frozen, $self->freeze_data( $el );
             }
         }
-        elsif ( $data_ref eq 'Catalyst::Authentication::User::Hash' ) {
-            $frozen = $self->pack_user_hash( $data );
-        }
-        elsif ( $data->can( "pack" ) ) {
+        elsif ( $data->can( 'pack' ) ) {
             $frozen = $data->pack;
         }
         else {
-            die "No pack method in data of type ", ref $data;
+            $frozen = { __STORABLE_FROZEN__ => freeze $data };
         }
     }
     else {
@@ -188,45 +168,25 @@ sub freeze_data {
     return $frozen;
 }
 
-sub pack_user_hash {
-    my $self = shift;
-    my $user = shift;
-
-    my $data = {
-        __CLASS__ => 'Catalyst::Authentication::User::Hash',
-    };
-
-    foreach my $k ( qw/ roles password auth_realm id / ) {
-        $data->{ $k } = $self->freeze_data( $user->{ $k } );
-    }
-
-    return $self->freeze_data( $data );
-}
-
-
 sub thaw_data {
     my ( $self, $data ) = @_;
 
     my $thawed;
 
-    if ( ref( $data ) eq "HASH" ) {
-
-        if ( $data->{ "__CLASS__" } ) {
-            if ( $data->{ __CLASS__ } eq 'Catalyst::Authentication::User::Hash' ) {
-                $thawed = use_module( $data->{ "__CLASS__" } )->new( $data );
-            }
-            else {
-                $thawed = use_module( $data->{ "__CLASS__" } )->unpack( $data );
-            }
+    if ( ref $data eq 'HASH' ) {
+        if ( $data->{ __CLASS__ } ) {
+            $thawed = use_module( $data->{ __CLASS__ } )->unpack( $data );
+        }
+        elsif ( $data->{ __STORABLE_FROZEN__ } ) {
+            $thawed = thaw $data->{ __STORABLE_FROZEN__ };
         }
         else {
-
             foreach ( keys %$data ) {
                 $thawed->{ $_ } = $self->thaw_data( $data->{ $_ } );
             }
         }
     }
-    elsif ( ref( $data ) eq "ARRAY" ) {
+    elsif ( ref $data eq 'ARRAY' ) {
         foreach ( @$data ) {
             push @$thawed, $self->thaw_data( $_ );
         }
@@ -234,9 +194,9 @@ sub thaw_data {
     else {
         $thawed = $data;
     }
+
     return $thawed;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 
